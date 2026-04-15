@@ -1,0 +1,15 @@
+Makefile
+*.o
+moc_*
+qrc_*.cpp
+*.qrc.depends
+documentation.list
+RPMS/
+build-*/
+ADHDFocus
+ADHDFocus.pro.user
+.qmake.stash
+.sfdk/
+.claude/
+CMakeLists.txt.user
+translations/*.qm

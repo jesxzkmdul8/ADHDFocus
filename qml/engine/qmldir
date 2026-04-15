@@ -1,0 +1,2 @@
+module engine
+singleton SessionEngine 1.0 SessionEngine.qml

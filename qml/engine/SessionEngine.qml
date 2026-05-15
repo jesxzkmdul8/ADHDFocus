@@ -154,14 +154,25 @@ QtObject {
     // --- +5 min extension: one-shot, used during winddown. Jumps straight
     // back into focus (skipping prelude), and flags focusFromExtension so
     // the audio bed can be restarted by the view.
+    //
+    // The extension does *not* grow remainingTotal: the 5 minutes of extra
+    // focus come out of the existing session budget. The natural consequence
+    // is that the last cycle gets shortened — tickFocus / tickWinddown /
+    // tickBreak all watch for remainingTotal <= 0 and end the session
+    // cleanly when it runs out. Overall session duration stays exactly what
+    // the user picked on the setup screen.
     function requestExtension() {
         if (extensionUsed)
             return false
+        if (remainingTotal <= 0)
+            return false   // no budget left to borrow from
 
-        remainingTotal += extensionSeconds
         extensionUsed = true
         focusFromExtension = true
-        remainingPhase = extensionSeconds
+        // Don't ask for more focus than we actually have left in the budget;
+        // otherwise the extension's focus block would be immediately cut
+        // short and produce a confusing flicker through winddown -> end.
+        remainingPhase = Math.min(extensionSeconds, remainingTotal)
         phase = "focus"   // emits phaseChanged last, after all state is in place
         return true
     }

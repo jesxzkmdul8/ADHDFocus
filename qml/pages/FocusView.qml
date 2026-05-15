@@ -236,10 +236,16 @@ Page {
                 }
             }
 
-            // +5 min extension is offered only during winddown and only once per session.
+            // +5 min extension is offered only during winddown, only once per
+            // session, and only when there's still some session budget left
+            // to take the 5 minutes from. The extension *shortens* the last
+            // cycle by the same amount it grants here — overall session
+            // duration stays unchanged.
             Button {
                 text: qsTr("+5 min")
-                visible: SessionEngine.phase === "winddown" && !SessionEngine.extensionUsed
+                visible: SessionEngine.phase === "winddown"
+                         && !SessionEngine.extensionUsed
+                         && SessionEngine.remainingTotal > 0
                 opacity: 0.6
                 anchors.horizontalCenter: parent.horizontalCenter
 

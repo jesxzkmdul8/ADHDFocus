@@ -14,6 +14,13 @@
 int main(int argc, char *argv[])
 {
     QScopedPointer<QGuiApplication> app(SailfishApp::application(argc, argv));
+
+    // Anchor the Qt application identity to harbour-adhdfocus so Qt.labs.settings
+    // writes to the sandbox-allowed config path and matches the Sailjail
+    // identity declared in harbour-adhdfocus.desktop.
+    app->setOrganizationName(QStringLiteral("harbour-adhdfocus"));
+    app->setApplicationName(QStringLiteral("harbour-adhdfocus"));
+
     QScopedPointer<QQuickView> view(SailfishApp::createView());
 
     // Try harbour-adhdfocus-<locale>.qm first (e.g. de_DE), then fall back to

@@ -4,6 +4,7 @@ Release:    1
 Summary:    ADHD Focus Timer App
 
 License:    GPLv3
+URL:        https://github.com/jesxzkmdul8/ADHDFocus
 Group:      Applications/Productivity
 
 BuildRequires: pkgconfig(sailfishapp)

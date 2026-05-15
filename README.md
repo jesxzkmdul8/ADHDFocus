@@ -25,7 +25,7 @@ Requires the Sailfish SDK.
 sfdk build
 ```
 
-Produces `RPMS/ADHDFocus-<version>-1.aarch64.rpm`.
+Produces `RPMS/harbour-adhdfocus-<version>-1.aarch64.rpm`.
 
 ## Target
 

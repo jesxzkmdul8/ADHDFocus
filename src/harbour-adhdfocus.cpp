@@ -1,0 +1,43 @@
+// harbour-adhdfocus entry point. Wires up the SailfishApp view, installs a
+// translator based on the system locale, exposes the qml/ tree as an import
+// path so the engine singleton (module "engine") can be resolved, and exposes
+// a `dataDir` context property for QML to locate bundled sounds without
+// hard-coding /usr/share/<name>/ paths.
+#include <sailfishapp.h>
+#include <QGuiApplication>
+#include <QQuickView>
+#include <QQmlContext>
+#include <QQmlEngine>
+#include <QTranslator>
+#include <QLocale>
+
+int main(int argc, char *argv[])
+{
+    QScopedPointer<QGuiApplication> app(SailfishApp::application(argc, argv));
+    QScopedPointer<QQuickView> view(SailfishApp::createView());
+
+    // Try harbour-adhdfocus-<locale>.qm first (e.g. de_DE), then fall back to
+    // language-only (de). If neither exists, strings remain as the English
+    // source from qsTr().
+    QTranslator *translator = new QTranslator(app.data());
+    QString locale = QLocale::system().name();
+    QString tsDir = SailfishApp::pathTo("translations").toLocalFile();
+    if (translator->load("harbour-adhdfocus-" + locale, tsDir) ||
+        translator->load("harbour-adhdfocus-" + locale.left(2), tsDir)) {
+        app->installTranslator(translator);
+    }
+
+    // Needed for `import engine 1.0` to resolve qml/engine/qmldir at runtime.
+    view->engine()->addImportPath(SailfishApp::pathTo("qml").toString());
+
+    // Expose the install data directory (e.g. /usr/share/harbour-adhdfocus) so
+    // QML can build absolute file:// URLs for bundled assets like the audio
+    // files. Using SailfishApp::pathTo means QML stays correct under any
+    // install prefix or future rename.
+    view->rootContext()->setContextProperty(
+        "dataDir", SailfishApp::pathTo(QString()).toString());
+
+    view->setSource(SailfishApp::pathToMainQml());
+    view->showFullScreen();
+    return app->exec();
+}

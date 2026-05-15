@@ -5,12 +5,11 @@ import QtQuick 2.6
 // Phases: idle -> prelude -> focus -> winddown -> break -> prelude -> ... -> end
 QtObject {
 
-    // --- Configuration: total length and derived focus/break durations.
-    property int totalTime: 0       // seconds of focused work requested by user
+    // --- Configuration: mode and the derived focus/break durations (seconds).
+    // Both durations are 0 until init() picks them based on `mode`.
     property string mode: "25/5"
-
-    property int focusDuration: 25  // seconds (rewritten by init() based on mode)
-    property int breakDuration: 5
+    property int focusDuration: 0
+    property int breakDuration: 0
 
     // --- Runtime state.
     property int remainingTotal: 0  // seconds of focus+break time left in session
@@ -28,7 +27,6 @@ QtObject {
 
     // --- Setup: called by SetupView before start(). Resets state and applies mode.
     function init(totalSeconds, selectedMode, taskList) {
-        totalTime = totalSeconds
         mode = selectedMode
         tasks = taskList
 
@@ -74,10 +72,9 @@ QtObject {
         remainingPhase--
         remainingTotal--
 
-        if (remainingPhase <= 0)
-            startWinddown()
-
-        if (remainingTotal <= 0)
+        // Either condition ends the focus block; combined so we don't enter
+        // winddown twice on the tick where both reach zero simultaneously.
+        if (remainingPhase <= 0 || remainingTotal <= 0)
             startWinddown()
     }
 

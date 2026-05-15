@@ -8,6 +8,8 @@ RPMS/
 build-*/
 ADHDFocus
 ADHDFocus.pro.user
+harbour-adhdfocus
+harbour-adhdfocus.pro.user
 .qmake.stash
 .sfdk/
 .claude/

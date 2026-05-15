@@ -2,8 +2,8 @@
 Type=Application
 X-Nemo-Application-Type=silica-qt5
 Name=ADHDFocus
-Icon=ADHDFocus
-Exec=ADHDFocus
+Icon=harbour-adhdfocus
+Exec=harbour-adhdfocus
 
 [X-Sailjail]
 Permissions=Audio

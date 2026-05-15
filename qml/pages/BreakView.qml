@@ -3,20 +3,20 @@ import Sailfish.Silica 1.0
 import engine 1.0
 
 // Break page: green arc on top, passive task list below (completed ones fade out).
+// Navigation off this page is signal-driven via Connections, not polled.
 Page {
     id: breakPage
 
-    // --- Phase-driven navigation: return to focus when break ends, or end screen if done.
-    Timer {
-        interval: 500
-        running: true
-        repeat: true
+    // --- Phase-driven navigation: return to focus when the break ends and the
+    // engine starts a new prelude, or jump to the recap screen if the session
+    // ended on a break boundary.
+    Connections {
+        target: SessionEngine
 
-        onTriggered: {
+        onPhaseChanged: {
             if (SessionEngine.phase === "prelude" || SessionEngine.phase === "focus")
                 pageStack.replace(Qt.resolvedUrl("FocusView.qml"))
-
-            if (SessionEngine.phase === "end")
+            else if (SessionEngine.phase === "end")
                 pageStack.replace(Qt.resolvedUrl("ReentryView.qml"))
         }
     }

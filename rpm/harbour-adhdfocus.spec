@@ -1,4 +1,4 @@
-Name:       ADHDFocus
+Name:       harbour-adhdfocus
 Version:    0.1.0
 Release:    1
 Summary:    ADHD Focus Timer App
@@ -30,7 +30,7 @@ make %{?_smp_mflags}
 %qmake5_install
 
 %files
-%{_bindir}/ADHDFocus
+%{_bindir}/harbour-adhdfocus
 %{_datadir}/%{name}/qml/*
 %{_datadir}/%{name}/sounds/*
 %{_datadir}/%{name}/translations/*

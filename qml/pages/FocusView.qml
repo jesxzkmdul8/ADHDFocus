@@ -4,32 +4,39 @@ import engine 1.0
 
 // Focus page: arc timer on top, task list at the bottom.
 // Covers three engine phases: prelude (fade-in + task entry), focus, and winddown.
+// Navigation off this page is signal-driven via Connections below, not polled.
 Page {
     id: focusPage
 
-    property string _prevPhase: ""
     property var _taskTexts: ["", "", ""] // buffers for up-to-3 editable prelude fields
 
-    // --- Phase-driven page navigation and duration-hint trigger.
-    // Polls twice a second; leaves for BreakView/ReentryView when engine says so.
-    Timer {
-        interval: 500
-        running: true
-        repeat: true
+    // --- React to engine phase changes: flash the duration hint on entering
+    // focus, harvest typed-but-unsubmitted tasks when prelude ends, and leave
+    // the page when the engine moves into break or end.
+    Connections {
+        target: SessionEngine
 
-        onTriggered: {
-            // On entering 'focus', flash the "25 min" / "50 min" hint for 15s.
-            if (SessionEngine.phase === "focus" && focusPage._prevPhase !== "focus") {
+        onPhaseChanged: {
+            if (SessionEngine.phase === "focus") {
                 durationHint.opacity = 1.0
                 hintTimer.restart()
+
+                // Prelude just ended: push whatever the user typed in empty
+                // slots into the engine's task list.
+                var slots = 3 - SessionEngine.tasks.length
+                for (var i = 0; i < slots; i++) {
+                    var t = focusPage._taskTexts[i].trim()
+                    if (t.length > 0)
+                        SessionEngine.addTask(t)
+                }
+                focusPage._taskTexts = ["", "", ""]
             }
-            focusPage._prevPhase = SessionEngine.phase
-
-            if (SessionEngine.phase === "break")
+            else if (SessionEngine.phase === "break") {
                 pageStack.replace(Qt.resolvedUrl("BreakView.qml"))
-
-            if (SessionEngine.phase === "end")
+            }
+            else if (SessionEngine.phase === "end") {
                 pageStack.replace(Qt.resolvedUrl("ReentryView.qml"))
+            }
         }
     }
 
@@ -181,34 +188,6 @@ Page {
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 onClicked: SessionEngine.requestExtension()
-            }
-        }
-    }
-
-    // Kick off the deferred collector when the page becomes active in prelude.
-    onStatusChanged: {
-        if (status === PageStatus.Active && SessionEngine.phase === "prelude")
-            _collectTimer.start()
-    }
-
-    // Waits until prelude ends, then pushes whatever the user typed in empty slots
-    // into SessionEngine.tasks. Single-shot per prelude.
-    Timer {
-        id: _collectTimer
-        interval: 500
-        running: false
-        repeat: true
-
-        onTriggered: {
-            if (SessionEngine.phase !== "prelude") {
-                var slots = 3 - SessionEngine.tasks.length
-                for (var i = 0; i < slots; i++) {
-                    var t = focusPage._taskTexts[i].trim()
-                    if (t.length > 0)
-                        SessionEngine.addTask(t)
-                }
-                focusPage._taskTexts = ["", "", ""]
-                stop()
             }
         }
     }

@@ -19,8 +19,11 @@
 #include <QQuickView>
 #include <QQmlContext>
 #include <QQmlEngine>
+#include <QtQml>
 #include <QTranslator>
 #include <QLocale>
+
+#include "BrownNoiseGenerator.h"
 
 int main(int argc, char *argv[])
 {
@@ -47,6 +50,11 @@ int main(int argc, char *argv[])
 
     // Needed for `import engine 1.0` to resolve qml/engine/qmldir at runtime.
     view->engine()->addImportPath(SailfishApp::pathTo("qml").toString());
+
+    // QML registration for the synthesized brown-noise bed. Lets QML write
+    // `import BrownNoise 1.0; BrownNoiseGenerator { ... }` and removes the
+    // need to ship a recorded audio file for the focus bed.
+    qmlRegisterType<BrownNoiseGenerator>("BrownNoise", 1, 0, "BrownNoiseGenerator");
 
     // Expose the install data directory (e.g. /usr/share/harbour-adhdfocus) so
     // QML can build absolute file:// URLs for bundled assets like the audio

@@ -2,6 +2,7 @@ import QtQuick 2.6
 import Sailfish.Silica 1.0
 import QtMultimedia 5.6
 import Nemo.KeepAlive 1.2
+import BrownNoise 1.0
 import engine 1.0
 
 // Root window. Drives the per-second session clock, plays audio in reaction to
@@ -19,15 +20,16 @@ ApplicationWindow {
         preventBlanking: SessionEngine.isRunning
     }
 
-    // --- Brown noise bed played during focus phases.
-    // 55-minute file on disk (longer than any single focus phase, so no loop mid-focus).
-    // Volume is animated via the Behavior; duration is set per-transition (30s in, 10s out).
-    Audio {
+    // --- Brown-noise bed played during focus phases.
+    //
+    // Generated on the device by BrownNoiseGenerator (see
+    // src/BrownNoiseGenerator.cpp) — we don't ship a recorded audio file
+    // for this. Volume is animated via the Behavior; the duration is set
+    // per-transition (30 s fade-in, 10 s fade-out). play() / stop() are
+    // called from the audio-reactions block further down.
+    BrownNoiseGenerator {
         id: brownNoise
-        source: dataDir + "sounds/brown_noise.ogg"
-        loops: Audio.Infinite
         volume: 0.0
-        autoLoad: true
         Behavior on volume { id: volumeFade; NumberAnimation { id: volumeAnim; duration: 30000 } }
     }
 

@@ -2,7 +2,10 @@ TARGET = harbour-adhdfocus
 CONFIG += sailfishapp
 QT += multimedia
 
-SOURCES += src/harbour-adhdfocus.cpp
+SOURCES += src/harbour-adhdfocus.cpp \
+           src/BrownNoiseGenerator.cpp
+
+HEADERS += src/BrownNoiseGenerator.h
 
 DISTFILES += \
     qml/harbour-adhdfocus.qml \
@@ -21,8 +24,7 @@ DISTFILES += \
 CONFIG += sailfishapp_i18n
 TRANSLATIONS += translations/harbour-adhdfocus.ts translations/harbour-adhdfocus-de.ts
 
-sounds.files = assets/sounds/brown_noise.ogg \
-               assets/sounds/ping_start.wav \
+sounds.files = assets/sounds/ping_start.wav \
                assets/sounds/ping_end.wav
 sounds.path = /usr/share/$${TARGET}/sounds
 

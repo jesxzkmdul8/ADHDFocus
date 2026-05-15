@@ -55,11 +55,22 @@ Page {
             height: width
             anchors.centerIn: parent
 
-            property real progress: SessionEngine.phase === "prelude"
-                ? SessionEngine.preludeRemaining / 30
-                : SessionEngine.phase === "winddown"
-                  ? SessionEngine.winddownRemaining / 10
-                  : SessionEngine.remainingPhase / SessionEngine.focusDuration
+            // Fraction of the wedge still to draw, clamped to [0, 1]. The
+            // clamp guards against values briefly going out of range when
+            // the engine ticks faster than the canvas repaints, and the
+            // explicit branch guards against focusDuration == 0 in idle.
+            property real progress: {
+                var raw
+                if (SessionEngine.phase === "prelude")
+                    raw = SessionEngine.preludeRemaining / 30
+                else if (SessionEngine.phase === "winddown")
+                    raw = SessionEngine.winddownRemaining / 10
+                else if (SessionEngine.focusDuration > 0)
+                    raw = SessionEngine.remainingPhase / SessionEngine.focusDuration
+                else
+                    raw = 0
+                return Math.max(0, Math.min(1, raw))
+            }
             property real startAngle: (SessionEngine.phase === "prelude" || SessionEngine.phase === "winddown")
                 ? 120
                 : SessionEngine.focusDuration / 10

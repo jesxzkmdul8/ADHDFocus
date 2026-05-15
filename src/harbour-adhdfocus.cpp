@@ -40,9 +40,14 @@ int main(int argc, char *argv[])
     // Expose the install data directory (e.g. /usr/share/harbour-adhdfocus) so
     // QML can build absolute file:// URLs for bundled assets like the audio
     // files. Using SailfishApp::pathTo means QML stays correct under any
-    // install prefix or future rename.
-    view->rootContext()->setContextProperty(
-        "dataDir", SailfishApp::pathTo(QString()).toString());
+    // install prefix or future rename. The trailing slash is enforced here so
+    // QML can safely concatenate `dataDir + "sounds/..."`; the SailfishApp API
+    // currently returns one but does not contractually guarantee it.
+    QString dataDir = SailfishApp::pathTo(QString()).toString();
+    if (!dataDir.endsWith(QLatin1Char('/'))) {
+        dataDir.append(QLatin1Char('/'));
+    }
+    view->rootContext()->setContextProperty(QStringLiteral("dataDir"), dataDir);
 
     view->setSource(SailfishApp::pathToMainQml());
     view->showFullScreen();

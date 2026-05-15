@@ -22,6 +22,12 @@ QtObject {
 
     property bool extensionUsed: false // +5 min extension is one-shot per session
 
+    // True for exactly one transition: when requestExtension() jumps directly
+    // from winddown to focus. The audio handler reads this to know it needs
+    // to restart the brown-noise bed (which had just faded out). Cleared by
+    // startFocus() the next time we enter focus the normal way.
+    property bool focusFromExtension: false
+
     // --- Task list (max 3 in UI); each entry: { title, completed }.
     property var tasks: []
 
@@ -32,6 +38,7 @@ QtObject {
 
         remainingTotal = totalSeconds
         extensionUsed = false
+        focusFromExtension = false
         phase = "idle"
         isRunning = false
 
@@ -64,6 +71,7 @@ QtObject {
 
     // --- Focus: the actual work interval (25 or 50 minutes).
     function startFocus() {
+        focusFromExtension = false
         phase = "focus"
         remainingPhase = focusDuration
     }
@@ -116,15 +124,20 @@ QtObject {
         }
     }
 
-    // --- +5 min extension: one-shot, used during winddown. Jumps back into focus.
+    // --- +5 min extension: one-shot, used during winddown. Jumps straight
+    // back into focus (skipping prelude). Sets focusFromExtension so the view
+    // can restart audio that the winddown had faded out. All state is in
+    // place before `phase` is assigned, so consumers of phaseChanged see a
+    // fully consistent engine.
     function requestExtension() {
         if (extensionUsed)
             return false
 
         remainingTotal += 300
         extensionUsed = true
-        phase = "focus"
+        focusFromExtension = true
         remainingPhase = 300
+        phase = "focus"
         return true
     }
 
@@ -144,6 +157,7 @@ QtObject {
         winddownRemaining = 0
         tasks = []
         extensionUsed = false
+        focusFromExtension = false
     }
 
     // --- Task helpers. Reassigning tasks (vs push) is required for QML bindings to fire.

@@ -82,6 +82,17 @@ ApplicationWindow {
             }
             else if (SessionEngine.phase === "focus") {
                 pingStart.play()
+                if (SessionEngine.focusFromExtension) {
+                    // +5 min jumped straight from winddown; the previous
+                    // winddown faded the bed to 0. Restart it here so the
+                    // extension isn't silent.
+                    volumeFade.enabled = false
+                    brownNoise.volume = 0.0
+                    brownNoise.play()
+                    volumeAnim.duration = 30000
+                    volumeFade.enabled = true
+                    brownNoise.volume = 0.3
+                }
             }
             else if (SessionEngine.phase === "winddown") {
                 // End-of-focus cue plus 10s brown-noise fade-out.

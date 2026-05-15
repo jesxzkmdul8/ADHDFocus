@@ -7,6 +7,10 @@ import engine 1.0
 Page {
     id: breakPage
 
+    // Trigger the hint flash + auto-fade on page creation, matching the
+    // imperative style used in FocusView.
+    Component.onCompleted: breakHintTimer.start()
+
     // --- Phase-driven navigation: return to focus when the break ends and the
     // engine starts a new prelude, or jump to the recap screen if the session
     // ended on a break boundary.
@@ -33,7 +37,11 @@ Page {
             height: width
             anchors.centerIn: parent
 
-            property real progress: SessionEngine.remainingPhase / SessionEngine.breakDuration
+            // Fraction of the wedge still to draw, clamped to [0, 1].
+            // Guarded against breakDuration == 0.
+            property real progress: SessionEngine.breakDuration > 0
+                ? Math.max(0, Math.min(1, SessionEngine.remainingPhase / SessionEngine.breakDuration))
+                : 0
 
             onPaint: {
                 var ctx = getContext("2d");
@@ -89,7 +97,6 @@ Page {
             Timer {
                 id: breakHintTimer
                 interval: 15000
-                running: true
                 onTriggered: breakHint.opacity = 0.0
             }
 

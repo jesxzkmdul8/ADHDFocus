@@ -3,9 +3,21 @@ import Sailfish.Silica 1.0
 import Qt.labs.settings 1.0
 import engine 1.0
 
-// Entry page: pick session length, mode, and optionally resume carry-over tasks.
+// SetupView
+// =========
+// Entry page: pick session length, pick the focus/break mode, and optionally
+// resume the open tasks left over from the previous session.
+//
+// Naming convention: properties whose name starts with an underscore (`_`)
+// are view-local state — they exist only to track UI selections that are
+// committed to the engine on "Start session". Anything without the prefix
+// is part of the page's public surface.
 Page {
     id: setupPage
+
+    // --- Visual constants for the carry-over block.
+    readonly property color colorHeading: "#cc8866"  // muted orange section header
+    readonly property color colorBullet: "#aa8877"   // dim text for bullet entries
 
     property var carryOver: []          // unfinished tasks from previous session
     property bool _mode5010: false      // false = 25/5, true = 50/10
@@ -35,7 +47,7 @@ Page {
 
             Label {
                 text: qsTr("Open tasks")
-                color: "#cc8866"
+                color: setupPage.colorHeading
                 font.pixelSize: Theme.fontSizeLarge
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -46,7 +58,7 @@ Page {
 
                 delegate: Label {
                     text: "\u2022  " + modelData.title
-                    color: "#aa8877"
+                    color: setupPage.colorBullet
                     font.pixelSize: Theme.fontSizeMedium
                     anchors.horizontalCenter: parent.horizontalCenter
                 }

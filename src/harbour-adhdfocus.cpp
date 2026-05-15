@@ -1,8 +1,19 @@
-// harbour-adhdfocus entry point. Wires up the SailfishApp view, installs a
-// translator based on the system locale, exposes the qml/ tree as an import
-// path so the engine singleton (module "engine") can be resolved, and exposes
-// a `dataDir` context property for QML to locate bundled sounds without
-// hard-coding /usr/share/<name>/ paths.
+// harbour-adhdfocus entry point.
+//
+// Responsibilities:
+//   1. Construct the Qt application and Sailfish view via SailfishApp helpers.
+//   2. Anchor the Qt application identity (organization + application name)
+//      to "harbour-adhdfocus" so Qt.labs.settings writes to the
+//      sandbox-allowed config path and matches the [X-Sailjail] identity in
+//      the .desktop file.
+//   3. Load translations matching the system locale, with a language-only
+//      fallback (de_DE -> de) and a final fall-through to the English source
+//      strings if neither .qm file is present.
+//   4. Add qml/ to the QML import path so `import engine 1.0` resolves to
+//      qml/engine/qmldir at runtime.
+//   5. Expose a `dataDir` context property carrying a normalised file:// URL
+//      to /usr/share/harbour-adhdfocus/, so QML can build URLs for bundled
+//      assets (sounds) without hard-coding install paths.
 #include <sailfishapp.h>
 #include <QGuiApplication>
 #include <QQuickView>

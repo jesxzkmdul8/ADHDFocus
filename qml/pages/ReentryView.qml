@@ -3,10 +3,21 @@ import Sailfish.Silica 1.0
 import Qt.labs.settings 1.0
 import engine 1.0
 
-// Recap / end-of-session page. Splits tasks into Done vs Open, persists the
-// Open list for next session's carry-over, and offers a New session action.
+// ReentryView
+// ===========
+// Recap / end-of-session page. Splits the session's tasks into "Done" and
+// "Open", persists the Open list to disk so SetupView can offer it as the
+// next session's carry-over, and offers a "New session" button.
 Page {
     id: endPage
+
+    // --- Visual constants. Two palettes: green for done, muted orange for
+    // open / carry-over. The orange tones match SetupView.colorHeading /
+    // colorBullet on purpose — same semantic ("things still to do").
+    readonly property color colorDoneHeading: "#66cc88"   // green section header
+    readonly property color colorDoneText: "#88aa88"      // muted green tick text
+    readonly property color colorOpenHeading: "#cc8866"   // muted orange section header
+    readonly property color colorOpenText: "#aa8877"      // dim text for open bullets
 
     property var completedTasks: []
     property var openTasks: []
@@ -60,7 +71,7 @@ Page {
 
                 Label {
                     text: qsTr("Done")
-                    color: "#66cc88"
+                    color: endPage.colorDoneHeading
                     font.pixelSize: Theme.fontSizeLarge
                 }
 
@@ -69,7 +80,7 @@ Page {
 
                     delegate: Label {
                         text: "\u2713  " + modelData.title
-                        color: "#88aa88"
+                        color: endPage.colorDoneText
                         font.pixelSize: Theme.fontSizeMedium
                     }
                 }
@@ -82,7 +93,7 @@ Page {
 
                 Label {
                     text: qsTr("Open")
-                    color: "#cc8866"
+                    color: endPage.colorOpenHeading
                     font.pixelSize: Theme.fontSizeLarge
                 }
 
@@ -91,7 +102,7 @@ Page {
 
                     delegate: Label {
                         text: "\u2022  " + modelData.title
-                        color: "#aa8877"
+                        color: endPage.colorOpenText
                         font.pixelSize: Theme.fontSizeMedium
                     }
                 }

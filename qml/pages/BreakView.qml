@@ -2,18 +2,30 @@ import QtQuick 2.6
 import Sailfish.Silica 1.0
 import engine 1.0
 
-// Break page: green arc on top, passive task list below (completed ones fade out).
-// Navigation off this page is signal-driven via Connections, not polled.
+// BreakView
+// =========
+// The page shown during a break interval. Green arc on top, a recap of the
+// session's tasks below (read-only; completed ones fade out so the user can
+// see at a glance what they ticked off).
+//
+// Navigation off this page is signal-driven via the Connections block
+// below; once the engine moves back into "prelude" / "focus" we hand off
+// to FocusView, or to ReentryView if the session ended on a break.
 Page {
     id: breakPage
 
-    // Trigger the hint flash + auto-fade on page creation, matching the
-    // imperative style used in FocusView.
-    Component.onCompleted: breakHintTimer.start()
+    // --- Visual constants.
+    readonly property color colorBreak: "#66cc88"  // green: the break arc + hint
+    readonly property color colorRing: "#333333"   // background ring of the arc
 
-    // --- Phase-driven navigation: return to focus when the break ends and the
-    // engine starts a new prelude, or jump to the recap screen if the session
-    // ended on a break boundary.
+    readonly property int hintHoldMs: 15000
+    readonly property int hintFadeMs: 1500
+
+    // --- Engine reactions.
+    //
+    // `Connections` listens for the engine's `phaseChanged` signal (every
+    // QML property has one auto-generated). The body runs whenever
+    // SessionEngine.phase is set to a different value.
     Connections {
         target: SessionEngine
 
@@ -24,6 +36,10 @@ Page {
                 pageStack.replace(Qt.resolvedUrl("ReentryView.qml"))
         }
     }
+
+    // Trigger the hint flash + auto-fade on page creation, matching the
+    // imperative style used in FocusView.
+    Component.onCompleted: breakHintTimer.start()
 
     // --- Top half: green break arc (angle scaled by breakDuration).
     Item {
@@ -44,38 +60,45 @@ Page {
                 : 0
 
             onPaint: {
+                // HTML5-Canvas API. Coordinates: (0,0) is the top-left;
+                // we draw the arc centred at (cx, cy).
                 var ctx = getContext("2d");
                 ctx.reset();
 
                 var cx = width / 2;
                 var cy = height / 2;
-                var lw = width / 20;
-                var r = width / 2 - lw;
+                var lw = width / 20;     // ring thickness, ~5% of width
+                var r = width / 2 - lw;  // radius, leaving room for the line
 
-                // Background ring.
+                // Background ring (full circle, dim).
                 ctx.beginPath();
                 ctx.lineWidth = lw;
-                ctx.strokeStyle = "#333333";
+                ctx.strokeStyle = breakPage.colorRing;
                 ctx.arc(cx, cy, r, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Green progress arc (same angular scale as focus: seconds/10 degrees).
-                var startAngle = SessionEngine.breakDuration / 10;
-                var endAngle = (startAngle * progress) * (Math.PI / 180);
+                // Foreground arc. Same angular scale as the focus arc:
+                // seconds / 10 = degrees (5 min -> 30°, 10 min -> 60°).
+                // Canvas measures angles in radians; -π/2 starts at
+                // 12 o'clock and the wedge sweeps clockwise.
+                var startAngleDeg = SessionEngine.breakDuration / 10;
+                var endAngleRad = (startAngleDeg * progress) * (Math.PI / 180);
 
                 ctx.beginPath();
                 ctx.lineWidth = lw;
-                ctx.strokeStyle = "#66cc88";
+                ctx.strokeStyle = breakPage.colorBreak;
 
                 ctx.arc(
                     cx, cy, r,
                     -Math.PI / 2,
-                    -Math.PI / 2 + endAngle,
+                    -Math.PI / 2 + endAngleRad,
                     false
                 );
                 ctx.stroke();
             }
 
+            // Canvas does not auto-repaint when properties change; we poke
+            // it once a second, which is plenty for a minute-scale timer.
             Timer {
                 interval: 1000
                 running: true
@@ -84,7 +107,9 @@ Page {
             }
         }
 
-        // --- Duration hint ("5 min break") centred in the arc; fades out after 15s.
+        // --- Duration hint ("5 min break") centred in the arc; fades out
+        // after hintHoldMs. Started from Component.onCompleted above so the
+        // trigger is explicit (matches FocusView).
         Label {
             id: breakHint
             anchors.centerIn: breakArc
@@ -92,19 +117,20 @@ Page {
                    ? qsTr("%1 min break").arg(Math.round(SessionEngine.breakDuration / 60))
                    : qsTr("%1 s break").arg(SessionEngine.breakDuration)
             font.pixelSize: Theme.fontSizeHuge
-            color: "#66cc88"
+            color: breakPage.colorBreak
 
             Timer {
                 id: breakHintTimer
-                interval: 15000
+                interval: breakPage.hintHoldMs
                 onTriggered: breakHint.opacity = 0.0
             }
 
-            Behavior on opacity { NumberAnimation { duration: 1500; easing.type: Easing.InOutQuad } }
+            Behavior on opacity { NumberAnimation { duration: breakPage.hintFadeMs; easing.type: Easing.InOutQuad } }
         }
     }
 
-    // --- Bottom half: task recap. Tasks are read-only; completed ones fade out visually.
+    // --- Bottom half: task recap. Tasks are read-only; completed ones fade
+    // out visually so the user can see at a glance what they ticked off.
     Item {
         id: taskArea
         anchors { top: arcArea.bottom; left: parent.left; right: parent.right; bottom: parent.bottom }
@@ -123,7 +149,8 @@ Page {
                     enabled: false
                     opacity: 1
 
-                    // Fade completed tasks out over 1.5s once they render.
+                    // Fade completed tasks out once they render. The duration
+                    // matches BreakView.hintFadeMs for visual coherence.
                     Component.onCompleted: {
                         if (modelData.completed)
                             fadeOut.start()
@@ -133,7 +160,7 @@ Page {
                         id: fadeOut
                         running: false
                         from: 1; to: 0
-                        duration: 1500
+                        duration: breakPage.hintFadeMs
                         easing.type: Easing.InOutQuad
                     }
                 }

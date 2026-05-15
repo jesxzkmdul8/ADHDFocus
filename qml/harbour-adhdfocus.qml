@@ -65,8 +65,20 @@ ApplicationWindow {
         }
     }
 
-    // --- Audio reactions. One handler per phase entry; fires exactly once per
-    // change because phaseChanged only emits when the value actually differs.
+    // --- Audio reactions.
+    //
+    // A `Connections` block is QML's way of listening to a signal from another
+    // object. `onPhaseChanged` runs every time SessionEngine.phase is assigned
+    // a different value. There is one branch per phase the user can *enter*.
+    //
+    // Brown-noise lifecycle:
+    //   prelude            -> play from 0, fade in over 30s
+    //   focus (extension)  -> play from 0, fade in over 30s (the +5 min jump
+    //                          comes straight from winddown, so the bed was
+    //                          already at 0 and needs restarting)
+    //   focus (normal)     -> nothing; the bed is already at full volume
+    //   winddown           -> fade out over 10s
+    //   break / end        -> hard stop
     Connections {
         target: SessionEngine
 

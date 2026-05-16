@@ -48,6 +48,15 @@ ApplicationWindow {
         volume: 0.6
     }
 
+    // Softer reuse of ping_start to mark the moment the +5 min button
+    // becomes available — a small nudge that this is the choice point,
+    // not a phase boundary, so it sits noticeably below the start/end cues.
+    Audio {
+        id: pingOffer
+        source: dataDir + "sounds/ping_start.wav"
+        volume: 0.25
+    }
+
     // --- Session clock. Ticks once per second while a session is running and
     // advances the engine. The engine itself emits phaseChanged whenever a tick
     // moves it into a new phase; audio transitions are wired off that signal
@@ -126,6 +135,22 @@ ApplicationWindow {
                 brownNoise.stop()
                 brownNoise.volume = 0.0
                 volumeFade.enabled = true
+            }
+        }
+
+        // --- +5 min question-phase cue.
+        //
+        // The button is visible while remainingTotal is in (75, 90]
+        // (see FocusView.qml / BreakView.qml). The window opens on the
+        // tick that drops remainingTotal to 90, so a small ping there
+        // marks the moment the user can choose to extend. Once the
+        // extension is taken, the button never reappears, so suppress
+        // the cue too.
+        onRemainingTotalChanged: {
+            if (SessionEngine.isRunning
+                    && !SessionEngine.extensionUsed
+                    && SessionEngine.remainingTotal === 90) {
+                pingOffer.play()
             }
         }
     }

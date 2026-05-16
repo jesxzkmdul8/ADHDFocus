@@ -37,8 +37,11 @@ Page {
         }
     }
 
-    // Trigger the hint flash + auto-fade on page creation, matching the
-    // imperative style used in FocusView.
+    // Trigger the hint flash + auto-fade on page creation. FocusView does
+    // the equivalent from Connections.onPhaseChanged because it stays
+    // mounted across phases; BreakView is recreated via pageStack.replace
+    // every time the engine enters break, so onCompleted runs once per
+    // break entry and is the right hook here.
     Component.onCompleted: breakHintTimer.start()
 
     // --- Top half: green break arc (angle scaled by breakDuration).

@@ -25,12 +25,14 @@ ApplicationWindow {
     // Generated on the device by BrownNoiseGenerator (see
     // src/BrownNoiseGenerator.cpp) — we don't ship a recorded audio file
     // for this. Volume is animated via the Behavior; the duration is set
-    // per-transition (30 s fade-in, 10 s fade-out). play() / stop() are
-    // called from the audio-reactions block further down.
+    // per-transition (prelude length for fade-in, winddown length for
+    // fade-out) so audio stays in sync with the visible countdown even if
+    // those engine constants change. play() / stop() are called from the
+    // audio-reactions block further down.
     BrownNoiseGenerator {
         id: brownNoise
         volume: 0.0
-        Behavior on volume { id: volumeFade; NumberAnimation { id: volumeAnim; duration: 30000 } }
+        Behavior on volume { id: volumeFade; NumberAnimation { id: volumeAnim; duration: SessionEngine.preludeSeconds * 1000 } }
     }
 
     // --- Short cues at phase boundaries.
@@ -86,11 +88,13 @@ ApplicationWindow {
 
         onPhaseChanged: {
             if (SessionEngine.phase === "prelude") {
-                // Entering a new focus block: start brown noise at 0, fade in over 30s.
+                // Entering a new focus block: start brown noise at 0, fade
+                // in over the prelude duration so audio and visible countdown
+                // finish ramping at the same instant.
                 volumeFade.enabled = false
                 brownNoise.volume = 0.0
                 brownNoise.play()
-                volumeAnim.duration = 30000
+                volumeAnim.duration = SessionEngine.preludeSeconds * 1000
                 volumeFade.enabled = true
                 brownNoise.volume = 0.3
             }
@@ -99,19 +103,21 @@ ApplicationWindow {
                 if (SessionEngine.focusFromExtension) {
                     // +5 min jumped straight from winddown; the previous
                     // winddown faded the bed to 0. Restart it here so the
-                    // extension isn't silent.
+                    // extension isn't silent. Same ramp length as the
+                    // normal prelude.
                     volumeFade.enabled = false
                     brownNoise.volume = 0.0
                     brownNoise.play()
-                    volumeAnim.duration = 30000
+                    volumeAnim.duration = SessionEngine.preludeSeconds * 1000
                     volumeFade.enabled = true
                     brownNoise.volume = 0.3
                 }
             }
             else if (SessionEngine.phase === "winddown") {
-                // End-of-focus cue plus 10s brown-noise fade-out.
+                // End-of-focus cue plus brown-noise fade-out matching the
+                // winddown duration.
                 pingEnd.play()
-                volumeAnim.duration = 10000
+                volumeAnim.duration = SessionEngine.winddownSeconds * 1000
                 brownNoise.volume = 0.0
             }
             else if (SessionEngine.phase === "break" || SessionEngine.phase === "end") {

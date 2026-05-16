@@ -30,9 +30,18 @@ Page {
     readonly property int hintHoldMs: 15000
     readonly property int hintFadeMs: 1500
 
-    // Buffers for the up-to-3 editable prelude task fields. Written by
-    // `onTextChanged` on each field, drained when the engine leaves prelude.
-    property var _taskTexts: ["", "", ""]
+    // Buffers for the editable prelude task fields, one per maxTasks slot.
+    // Written by `onTextChanged` on each field, drained when the engine
+    // leaves prelude. Size is derived from SessionEngine.maxTasks so the
+    // two stay in sync if the engine constant ever changes.
+    property var _taskTexts: emptyTaskTexts()
+
+    function emptyTaskTexts() {
+        var arr = []
+        for (var i = 0; i < SessionEngine.maxTasks; i++)
+            arr.push("")
+        return arr
+    }
 
     // --- Engine reactions.
     //
@@ -56,7 +65,7 @@ Page {
                     if (t.length > 0)
                         SessionEngine.addTask(t)
                 }
-                focusPage._taskTexts = ["", "", ""]
+                focusPage._taskTexts = focusPage.emptyTaskTexts()
             }
             else if (SessionEngine.phase === "break") {
                 pageStack.replace(Qt.resolvedUrl("BreakView.qml"))

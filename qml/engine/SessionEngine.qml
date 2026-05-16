@@ -72,9 +72,17 @@ QtObject {
         if (mode === "25/5") {
             focusDuration = 25 * 60
             breakDuration = 5 * 60
-        } else {
+        } else if (mode === "50/10") {
             focusDuration = 50 * 60
             breakDuration = 10 * 60
+        } else if (mode === "5/5") {
+            // --- DEV/TEST MODE ---
+            // Short cycles for quick manual testing. Exposed in SetupView
+            // when its _testModesEnabled flag is true. Delete both this
+            // branch and the matching entry in SetupView._availableModes
+            // once no longer needed.
+            focusDuration = 5 * 60
+            breakDuration = 5 * 60
         }
     }
 

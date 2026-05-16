@@ -20,9 +20,23 @@ Page {
     readonly property color colorBullet: "#aa8877"   // dim text for bullet entries
 
     property var carryOver: []          // unfinished tasks from previous session
-    property bool _mode5010: false      // false = 25/5, true = 50/10
+    property string _mode: "25/5"       // selected interval mode (see _availableModes)
     property bool _useCarryOver: false  // toggled by Continue / Start fresh chips
     property int _hours: 2              // selected session length in hours
+
+    // --- Interval modes available on the picker.
+    //
+    // Each entry: { label: display text, value: engine mode string, testOnly?: bool }.
+    // Entries flagged `testOnly` are only rendered when `_testModesEnabled`
+    // is true — flip that flag (or delete the entry) to take the test mode
+    // out of the UI without touching the engine. The "5/5" entry is a
+    // dev/test convenience; it has a matching branch in SessionEngine.init().
+    readonly property bool _testModesEnabled: true
+    readonly property var _availableModes: [
+        { label: "25 / 5", value: "25/5" },
+        { label: "50 / 10", value: "50/10" },
+        { label: "5 / 5", value: "5/5", testOnly: true }
+    ]
 
     // Persistent store for tasks left open after the last session.
     Settings {
@@ -165,46 +179,30 @@ Page {
             spacing: Theme.paddingLarge
             anchors.horizontalCenter: parent.horizontalCenter
 
-            BackgroundItem {
-                width: Theme.itemSizeExtraLarge
-                height: Theme.itemSizeSmall
+            Repeater {
+                model: setupPage._availableModes
 
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.paddingSmall
-                    color: !setupPage._mode5010 ? Theme.highlightColor : "transparent"
-                    border.color: Theme.highlightColor
-                    border.width: 1
+                delegate: BackgroundItem {
+                    visible: !modelData.testOnly || setupPage._testModesEnabled
+                    width: Theme.itemSizeExtraLarge
+                    height: Theme.itemSizeSmall
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: Theme.paddingSmall
+                        color: setupPage._mode === modelData.value ? Theme.highlightColor : "transparent"
+                        border.color: Theme.highlightColor
+                        border.width: 1
+                    }
+
+                    Label {
+                        anchors.centerIn: parent
+                        text: modelData.label
+                        color: setupPage._mode === modelData.value ? Theme.highlightDimmerColor : Theme.primaryColor
+                    }
+
+                    onClicked: setupPage._mode = modelData.value
                 }
-
-                Label {
-                    anchors.centerIn: parent
-                    text: "25 / 5"
-                    color: !setupPage._mode5010 ? Theme.highlightDimmerColor : Theme.primaryColor
-                }
-
-                onClicked: setupPage._mode5010 = false
-            }
-
-            BackgroundItem {
-                width: Theme.itemSizeExtraLarge
-                height: Theme.itemSizeSmall
-
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Theme.paddingSmall
-                    color: setupPage._mode5010 ? Theme.highlightColor : "transparent"
-                    border.color: Theme.highlightColor
-                    border.width: 1
-                }
-
-                Label {
-                    anchors.centerIn: parent
-                    text: "50 / 10"
-                    color: setupPage._mode5010 ? Theme.highlightDimmerColor : Theme.primaryColor
-                }
-
-                onClicked: setupPage._mode5010 = true
             }
         }
 
@@ -215,10 +213,9 @@ Page {
             anchors.horizontalCenter: parent.horizontalCenter
 
             onClicked: {
-                var mode = setupPage._mode5010 ? "50/10" : "25/5"
                 var taskList = setupPage._useCarryOver ? carryOver : []
 
-                SessionEngine.init(setupPage._hours * 3600, mode, taskList)
+                SessionEngine.init(setupPage._hours * 3600, setupPage._mode, taskList)
                 storage.carryOverTasks = "[]"
                 SessionEngine.start()
 

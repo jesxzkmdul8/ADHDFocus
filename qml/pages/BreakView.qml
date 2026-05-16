@@ -165,6 +165,23 @@ Page {
                     }
                 }
             }
+
+            // +5 min extension mirror of the one in FocusView. With typical
+            // hour-aligned 25/5 and 50/10 sessions the (76, 90] window lands
+            // in the final break, so without this mirror the button would
+            // never be reachable. Clicking jumps directly into focus phase;
+            // BreakView's onPhaseChanged then replaces this page with
+            // FocusView.
+            Button {
+                text: qsTr("+5 min")
+                visible: !SessionEngine.extensionUsed
+                         && SessionEngine.remainingTotal > 75
+                         && SessionEngine.remainingTotal <= 90
+                opacity: 0.6
+                anchors.horizontalCenter: parent.horizontalCenter
+
+                onClicked: SessionEngine.requestExtension()
+            }
         }
     }
 }

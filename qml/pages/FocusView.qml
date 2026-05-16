@@ -243,16 +243,18 @@ Page {
                 }
             }
 
-            // +5 min extension is offered only during winddown, only once per
-            // session, and only when there's still some session budget left
-            // to take the 5 minutes from. The extension *shortens* the last
-            // cycle by the same amount it grants here — overall session
-            // duration stays unchanged.
+            // +5 min extension is offered once per session, in a 15 s window
+            // that opens 1.5 min before the session would otherwise end
+            // (remainingTotal between 76 and 90 s inclusive). Outside that
+            // window the button stays hidden — a 1 s "extension" would be
+            // dishonest, and an every-winddown offer was too noisy. With
+            // hour-aligned 25/5 and 50/10 sessions this window lands in the
+            // final break, so the same button is mirrored in BreakView.
             Button {
                 text: qsTr("+5 min")
-                visible: SessionEngine.phase === "winddown"
-                         && !SessionEngine.extensionUsed
-                         && SessionEngine.remainingTotal > 0
+                visible: !SessionEngine.extensionUsed
+                         && SessionEngine.remainingTotal > 75
+                         && SessionEngine.remainingTotal <= 90
                 opacity: 0.6
                 anchors.horizontalCenter: parent.horizontalCenter
 

@@ -163,9 +163,16 @@ Page {
         Label {
             id: durationHint
             anchors.centerIn: arcCanvas
-            text: SessionEngine.focusDuration >= 60
-                  ? qsTr("%1 min").arg(Math.round(SessionEngine.focusDuration / 60))
-                  : qsTr("%1 s").arg(SessionEngine.focusDuration)
+            // During the +5 min extension the focus block is at most
+            // extensionSeconds (and often less, capped by remainingTotal),
+            // not focusDuration — so the normal "25 min" / "50 min" hint
+            // would be misleading. Show "+5 min" instead until the engine
+            // re-enters focus the normal way and clears focusFromExtension.
+            text: SessionEngine.focusFromExtension
+                  ? qsTr("+5 min")
+                  : SessionEngine.focusDuration >= 60
+                    ? qsTr("%1 min").arg(Math.round(SessionEngine.focusDuration / 60))
+                    : qsTr("%1 s").arg(SessionEngine.focusDuration)
             font.pixelSize: Theme.fontSizeHuge
             color: Theme.highlightColor
             opacity: 0.0

@@ -11,11 +11,19 @@
         <source>%1 s break</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>+5 min</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>CoverPage</name>
     <message>
         <source>%1 min</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&lt;1 min</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

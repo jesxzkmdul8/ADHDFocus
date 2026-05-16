@@ -169,17 +169,18 @@ Page {
                 }
             }
 
-            // +5 min extension mirror of the one in FocusView. With typical
-            // hour-aligned 25/5 and 50/10 sessions the (76, 90] window lands
-            // in the final break, so without this mirror the button would
-            // never be reachable. Clicking jumps directly into focus phase;
+            // +5 min extension is offered in a 15 s window that opens
+            // 1.5 min before each break ends — i.e. when the per-phase
+            // counter remainingPhase drops into (75, 90]. Same 90 s lead
+            // time as the original end-of-session offer, but applied to
+            // every cycle. Clicking jumps directly into focus phase;
             // BreakView's onPhaseChanged then replaces this page with
             // FocusView.
             Button {
                 text: qsTr("+5 min")
-                visible: !SessionEngine.extensionUsed
-                         && SessionEngine.remainingTotal > 75
-                         && SessionEngine.remainingTotal <= 90
+                visible: SessionEngine.phase === "break"
+                         && SessionEngine.remainingPhase > 75
+                         && SessionEngine.remainingPhase <= 90
                 opacity: 0.6
                 anchors.horizontalCenter: parent.horizontalCenter
 

@@ -7,7 +7,7 @@ import engine 1.0
 // The page that covers three engine phases:
 //   - prelude   : circular fade-in countdown + text fields for new tasks
 //   - focus     : circular work countdown + interactive task list
-//   - winddown  : fade-out countdown + a one-shot "+5 min" button
+//   - winddown  : fade-out countdown (the +5 min offer lives in BreakView)
 //
 // Navigation off this page is signal-driven via the Connections block below,
 // not polled — when the engine moves into "break" or "end", we replace the
@@ -172,16 +172,9 @@ Page {
         Label {
             id: durationHint
             anchors.centerIn: arcCanvas
-            // During the +5 min extension the focus block is at most
-            // extensionSeconds (and often less, capped by remainingTotal),
-            // not focusDuration — so the normal "25 min" / "50 min" hint
-            // would be misleading. Show "+5 min" instead until the engine
-            // re-enters focus the normal way and clears focusFromExtension.
-            text: SessionEngine.focusFromExtension
-                  ? qsTr("+5 min")
-                  : SessionEngine.focusDuration >= 60
-                    ? qsTr("%1 min").arg(Math.round(SessionEngine.focusDuration / 60))
-                    : qsTr("%1 s").arg(SessionEngine.focusDuration)
+            text: SessionEngine.focusDuration >= 60
+                  ? qsTr("%1 min").arg(Math.round(SessionEngine.focusDuration / 60))
+                  : qsTr("%1 s").arg(SessionEngine.focusDuration)
             font.pixelSize: Theme.fontSizeHuge
             color: Theme.highlightColor
             opacity: 0.0
@@ -252,18 +245,16 @@ Page {
                 }
             }
 
-            // +5 min extension is offered once per session, in a 15 s window
-            // that opens 1.5 min before the session would otherwise end
-            // (remainingTotal between 76 and 90 s inclusive). Outside that
-            // window the button stays hidden — a 1 s "extension" would be
-            // dishonest, and an every-winddown offer was too noisy. With
-            // hour-aligned 25/5 and 50/10 sessions this window lands in the
-            // final break, so the same button is mirrored in BreakView.
+            // +5 min extension offered 1.5 min before the focus phase ends
+            // (remainingPhase in (75, 90]). Clicking jumps into a fresh
+            // 5 min focus block. Mirrored in BreakView for the same window
+            // near the end of the break, so each cycle has two chances to
+            // extend.
             Button {
                 text: qsTr("+5 min")
-                visible: !SessionEngine.extensionUsed
-                         && SessionEngine.remainingTotal > 75
-                         && SessionEngine.remainingTotal <= 90
+                visible: SessionEngine.phase === "focus"
+                         && SessionEngine.remainingPhase > 75
+                         && SessionEngine.remainingPhase <= 90
                 opacity: 0.6
                 anchors.horizontalCenter: parent.horizontalCenter
 

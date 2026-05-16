@@ -15,9 +15,12 @@ import QtQuick 2.6
 //   prelude   : a 30-second fade-in window during which the user can add
 //               up to 3 tasks. Audio brown-noise starts here.
 //   focus     : the actual work interval (25 or 50 minutes depending on mode).
-//   winddown  : a 10-second fade-out window; the +5 min extension is
-//               offered here.
+//   winddown  : a 10-second fade-out window.
 //   break     : 5 or 10 minutes of pause.
+//
+// The +5 min extension is offered in two 15 s windows per cycle: 1.5 min
+// before the end of the focus phase, and 1.5 min before the end of the
+// break. Clicking the button always jumps into a fresh 5 min focus block.
 //   end       : the session is complete; the recap page takes over.
 //
 // All `*Seconds` properties below are *named constants*. They are
@@ -46,14 +49,6 @@ QtObject {
     property int preludeRemaining: 0  // current prelude countdown
     property int winddownRemaining: 0 // current winddown countdown
 
-    property bool extensionUsed: false // the +5 min extension is one-shot per session
-
-    // True for exactly one transition: when requestExtension() jumps directly
-    // from winddown to focus. The audio handler reads this to know it needs to
-    // restart the brown-noise bed (which had just faded out). Cleared by
-    // startFocus() the next time we enter focus the normal way.
-    property bool focusFromExtension: false
-
     // --- Task list (capped at maxTasks in addTask()); each entry has the
     // shape { title: string, completed: bool }.
     property var tasks: []
@@ -64,8 +59,6 @@ QtObject {
         tasks = taskList
 
         remainingTotal = totalSeconds
-        extensionUsed = false
-        focusFromExtension = false
         phase = "idle"
         isRunning = false
 
@@ -106,7 +99,6 @@ QtObject {
 
     // --- Focus: the actual work interval (25 or 50 minutes).
     function startFocus() {
-        focusFromExtension = false
         phase = "focus"
         remainingPhase = focusDuration
     }
@@ -159,29 +151,30 @@ QtObject {
         }
     }
 
-    // --- +5 min extension: one-shot, used during winddown. Jumps straight
-    // back into focus (skipping prelude), and flags focusFromExtension so
-    // the audio bed can be restarted by the view.
+    // --- +5 min extension: offered 1.5 min before the end of focus and
+    // again 1.5 min before the end of break (see FocusView / BreakView).
+    // Extends the *current* phase in place — tapping during focus adds
+    // 5 min of focus, tapping during break adds 5 min of break. No phase
+    // transition is triggered.
     //
-    // The extension does *not* grow remainingTotal: the 5 minutes of extra
-    // focus come out of the existing session budget. The natural consequence
-    // is that the last cycle gets shortened — tickFocus / tickWinddown /
+    // The extension does *not* grow remainingTotal: the 5 extra minutes
+    // come out of the existing session budget. The natural consequence
+    // is that a later cycle gets shortened — tickFocus / tickWinddown /
     // tickBreak all watch for remainingTotal <= 0 and end the session
-    // cleanly when it runs out. Overall session duration stays exactly what
-    // the user picked on the setup screen.
+    // cleanly when it runs out. Overall session duration stays exactly
+    // what the user picked on the setup screen. The user can chain
+    // extensions (each visibility window can fire once) until the budget
+    // runs low.
     function requestExtension() {
-        if (extensionUsed)
+        if (phase !== "focus" && phase !== "break")
             return false
         if (remainingTotal <= 0)
             return false   // no budget left to borrow from
 
-        extensionUsed = true
-        focusFromExtension = true
-        // Don't ask for more focus than we actually have left in the budget;
-        // otherwise the extension's focus block would be immediately cut
-        // short and produce a confusing flicker through winddown -> end.
-        remainingPhase = Math.min(extensionSeconds, remainingTotal)
-        phase = "focus"   // emits phaseChanged last, after all state is in place
+        // Cap the new phase length to what's left in the session budget,
+        // so we never schedule more focus/break than the session can
+        // actually deliver.
+        remainingPhase = Math.min(remainingPhase + extensionSeconds, remainingTotal)
         return true
     }
 
@@ -200,8 +193,6 @@ QtObject {
         preludeRemaining = 0
         winddownRemaining = 0
         tasks = []
-        extensionUsed = false
-        focusFromExtension = false
     }
 
     // --- Task helpers. We *reassign* `tasks` (rather than push/mutate in

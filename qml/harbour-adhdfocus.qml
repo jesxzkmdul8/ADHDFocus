@@ -85,13 +85,13 @@ ApplicationWindow {
     // a different value. There is one branch per phase the user can *enter*.
     //
     // Brown-noise lifecycle:
-    //   prelude            -> play from 0, fade in over 30s
-    //   focus (extension)  -> play from 0, fade in over 30s (the +5 min jump
-    //                          comes straight from winddown, so the bed was
-    //                          already at 0 and needs restarting)
-    //   focus (normal)     -> nothing; the bed is already at full volume
-    //   winddown           -> fade out over 10s
-    //   break / end        -> hard stop
+    //   prelude        -> play from 0, fade in over 30s
+    //   focus          -> nothing; the bed is already at full volume
+    //   winddown       -> fade out over 10s
+    //   break / end    -> hard stop
+    // The +5 min extension stretches the current phase in place (no phase
+    // transition), so audio just keeps doing whatever the current phase
+    // dictates.
     Connections {
         target: SessionEngine
 
@@ -109,18 +109,6 @@ ApplicationWindow {
             }
             else if (SessionEngine.phase === "focus") {
                 pingStart.play()
-                if (SessionEngine.focusFromExtension) {
-                    // +5 min jumped straight from winddown; the previous
-                    // winddown faded the bed to 0. Restart it here so the
-                    // extension isn't silent. Same ramp length as the
-                    // normal prelude.
-                    volumeFade.enabled = false
-                    brownNoise.volume = 0.0
-                    brownNoise.play()
-                    volumeAnim.duration = SessionEngine.preludeSeconds * 1000
-                    volumeFade.enabled = true
-                    brownNoise.volume = 0.3
-                }
             }
             else if (SessionEngine.phase === "winddown") {
                 // End-of-focus cue plus brown-noise fade-out matching the
@@ -140,16 +128,16 @@ ApplicationWindow {
 
         // --- +5 min question-phase cue.
         //
-        // The button is visible while remainingTotal is in (75, 90]
-        // (see FocusView.qml / BreakView.qml). The window opens on the
-        // tick that drops remainingTotal to 90, so a small ping there
-        // marks the moment the user can choose to extend. Once the
-        // extension is taken, the button never reappears, so suppress
-        // the cue too.
-        onRemainingTotalChanged: {
+        // The button is visible during focus and break while remainingPhase
+        // is in (75, 90] (see FocusView.qml / BreakView.qml). The window
+        // opens on the tick that drops remainingPhase to 90, so a small
+        // ping there marks the moment the user can choose to extend.
+        // Fires twice per cycle: once near the end of focus, once near
+        // the end of break.
+        onRemainingPhaseChanged: {
             if (SessionEngine.isRunning
-                    && !SessionEngine.extensionUsed
-                    && SessionEngine.remainingTotal === 90) {
+                    && (SessionEngine.phase === "focus" || SessionEngine.phase === "break")
+                    && SessionEngine.remainingPhase === 90) {
                 pingOffer.play()
             }
         }
